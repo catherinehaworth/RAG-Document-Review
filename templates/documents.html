@@ -1,0 +1,107 @@
+{{define "documents.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <title>{{.Title}} · Document Review</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/documents"><span class="brand-mark">D</span><span>Document <span class="brand-light">Review</span></span></a>
+      <nav class="nav-left" aria-label="Main navigation">
+        <a class="nav-link active" href="/documents" aria-current="page">Library</a>
+        <a class="nav-link" href="/ask">Ask</a>
+      </nav>
+      <form action="/logout" method="post"><button type="submit" class="button button-quiet">Sign out</button></form>
+    </header>
+    <main class="container">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">KNOWLEDGE LIBRARY</p>
+          <h1>Your documents, ready to answer</h1>
+          <p class="subheading">Build a searchable library from Word, Excel, HTML, and text files. Set up filename-based categories, document groups, and optional webpages.</p>
+        </div>
+        <span class="provider-pill"><span class="provider-dot"></span>{{.Provider}} model</span>
+      </section>
+      {{if .Notice}}<div class="notice notice-success" role="status">{{.Notice}}</div>{{end}}
+      {{if .Error}}<div class="notice notice-error" role="alert">{{.Error}}</div>{{end}}
+
+      <section class="card upload-card">
+        <div class="section-title"><div class="step-icon">↑</div><div><h2>Add documents</h2><p>DOCX, XLSX, HTML, and TXT · up to {{.MaxUploadBytes}} per file</p></div></div>
+        <form action="/documents/new" method="post" enctype="multipart/form-data" data-busy-message="Uploading and indexing your document…">
+          <label class="upload-zone" for="upload-file">
+            <span class="upload-icon" aria-hidden="true">↑</span><span class="upload-title">Choose supported files</span>
+            <span class="upload-hint">or drag a file here · maximum {{.MaxUploadBytes}}</span>
+            <input id="upload-file" type="file" name="file" accept=".docx,.xlsx,.html,.htm,.txt" required data-max-bytes="{{.MaxUploadBytesInt}}" />
+          </label>
+          <div class="form-footer"><span class="field-hint">Text is extracted for search. Only relevant excerpts are sent to the configured model provider.</span><button type="submit" class="button button-primary"><span>Upload document</span><span aria-hidden="true">→</span></button></div>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><div class="step-icon">⌗</div><div><h2>Organize your library</h2><p>Filename keywords assign categories automatically; groups let you collect specific files.</p></div></div>
+        <div class="management-grid">
+          <form action="/categories" method="post">
+            <h3>Create a category</h3>
+            <label>Category name<input type="text" name="name" maxlength="80" placeholder="Policies" required /></label>
+            <label>Filename contains<input type="text" name="keyword" maxlength="80" placeholder="policy" required /></label>
+            <button type="submit" class="button button-outline">Save category rule</button>
+          </form>
+          <form action="/groups" method="post">
+            <h3>Create a document group</h3>
+            <label>Group name<input type="text" name="name" maxlength="80" placeholder="Board papers" required /></label>
+            <button type="submit" class="button button-outline">Create group</button>
+          </form>
+          <form action="/webpages" method="post" data-busy-message="Fetching and indexing webpage…">
+            <h3>Add a webpage</h3>
+            <label>Public HTTPS URL<input type="text" name="url" maxlength="2000" placeholder="https://example.org/policy" required /></label>
+            <button type="submit" class="button button-outline">Fetch and index page</button>
+            <p class="field-hint">Only public HTTPS HTML pages. Webpage search is optional.</p>
+          </form>
+        </div>
+        {{if .Categories}}<p class="management-list"><strong>Category rules:</strong> {{range $i, $item := .Categories}}{{if $i}} · {{end}}{{$item.Name}} when filename contains “{{$item.Keyword}}”{{end}}</p>{{end}}
+        {{if .Groups}}<p class="management-list"><strong>Groups:</strong> {{range $i, $item := .Groups}}{{if $i}} · {{end}}{{$item.Name}}{{end}}</p>{{end}}
+        {{if .WebPages}}<p class="management-list"><strong>Indexed webpages:</strong> {{range $i, $item := .WebPages}}{{if $i}} · {{end}}{{$item.URL}}{{end}}</p>{{end}}
+      </section>
+
+      <section class="library-section">
+        <div class="section-title section-title-between"><div><p class="eyebrow">YOUR LIBRARY</p><h2>Files <span class="count">{{len .Documents}}</span></h2></div><a class="text-link" href="/ask">Ask a question <span aria-hidden="true">→</span></a></div>
+        {{if not .Documents}}
+          <div class="empty-state card"><div class="empty-icon" aria-hidden="true">▤</div><h3>Your library is empty</h3><p>Upload a supported file above to start building your searchable knowledge base.</p></div>
+        {{else}}
+          <div class="document-list">
+            {{range .Documents}}
+              <article class="document-row">
+                <div class="file-icon" aria-hidden="true">{{if eq .MimeType "text/plain; charset=utf-8"}}TXT{{else if eq .MimeType "text/html; charset=utf-8"}}HTML{{else if eq .MimeType "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}}DOCX{{else}}XLSX{{end}}</div>
+                <div class="document-info">
+                  <h3 title="{{.Filename}}">{{.Filename}}</h3>
+                  <p>{{.FileSizeText}} <span class="meta-separator">·</span> {{.ChunkCount}} passages <span class="meta-separator">·</span> {{if .Category}}{{.Category}}{{else}}Uncategorized{{end}}</p>
+                  {{if .GroupNames}}<p>Groups: {{.GroupNames}}</p>{{end}}
+                  {{if ne .MetadataDates "[]"}}<p>Dates found: {{.MetadataDates}}</p>{{end}}
+                  {{if ne .MetadataPeople "[]"}}<p>Names found: {{.MetadataPeople}}</p>{{end}}
+                </div>
+                <div class="document-state"><span class="status {{.Status}}"><span class="status-dot"></span>{{.Status}}</span></div>
+                <div class="document-actions">
+                  <form action="/documents/replace" method="post" enctype="multipart/form-data" data-busy-message="Replacing and re-indexing…">
+                    <input type="hidden" name="id" value="{{.ID}}" />
+                    <label class="button button-outline file-replace" for="replace-{{.ID}}">Choose file<input id="replace-{{.ID}}" type="file" name="file" accept=".docx,.xlsx,.html,.htm,.txt" hidden data-required-file="true" data-max-bytes="{{$.MaxUploadBytesInt}}" /></label>
+                    <button type="submit" class="button button-outline">Save</button><p class="form-status" role="status" aria-live="polite"></p>
+                  </form>
+                  {{if $.Groups}}<form action="/groups/assign" method="post"><input type="hidden" name="document_id" value="{{.ID}}" /><select name="group_id" aria-label="Group for {{.Filename}}" required>{{range $.Groups}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select><button type="submit" name="action" value="add" class="button button-outline">Add</button><button type="submit" name="action" value="remove" class="button button-outline">Remove</button></form>{{end}}
+                  <form action="/documents/delete" method="post" data-confirm="Remove {{.Filename}} and all its indexed passages?"><input type="hidden" name="id" value="{{.ID}}" /><button type="submit" class="button button-danger" aria-label="Delete {{.Filename}}">Delete</button></form>
+                </div>
+              </article>
+            {{end}}
+          </div>
+        {{end}}
+      </section>
+      <footer class="page-footer">The model can make mistakes. Check cited source excerpts before relying on an answer.</footer>
+    </main>
+  </body>
+</html>
+{{end}}

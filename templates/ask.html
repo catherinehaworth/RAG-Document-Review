@@ -1,0 +1,71 @@
+{{define "ask.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <title>{{.Title}} · Document Review</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/documents"><span class="brand-mark">D</span><span>Document <span class="brand-light">Review</span></span></a>
+      <nav class="nav-left" aria-label="Main navigation"><a class="nav-link" href="/documents">Library</a><a class="nav-link active" href="/ask" aria-current="page">Ask</a></nav>
+      <form action="/logout" method="post"><button type="submit" class="button button-quiet">Sign out</button></form>
+    </header>
+    <main class="container narrow">
+      <section class="page-heading ask-heading">
+        <div><p class="eyebrow">DOCUMENT Q&A</p><h1>Find answers in your sources</h1><p class="subheading">Choose a collection of library files and optional webpages. Follow-up questions in this browser session build on earlier answers.</p></div>
+        <a class="text-link" href="/ask?new=1">New conversation</a>
+      </section>
+      {{if .Notice}}<div class="notice notice-success" role="status">{{.Notice}}</div>{{end}}
+      {{if .Error}}<div class="notice notice-error" role="alert">{{.Error}}</div>{{end}}
+      <section class="card question-card">
+        <form method="post" action="/ask" data-busy-message="Searching selected sources and preparing an answer…">
+          <input type="hidden" name="session_id" value="{{.SessionID}}" />
+          <input type="hidden" name="selection_mode" value="interactive" />
+          <label class="question-label" for="question">Your question</label>
+          <textarea id="question" name="question" rows="3" maxlength="4000" placeholder="What would you like to know?" required>{{if .Answer}}{{.Answer.Question}}{{else}}{{.Question}}{{end}}</textarea>
+          <fieldset class="source-selection">
+            <legend>Library files</legend>
+            <label class="inline-choice"><input type="checkbox" name="search_all" value="on" checked /> Search all documents</label>
+            {{if .Categories}}<label>Limit to category<select name="category"><option value="">All categories</option>{{range .Categories}}<option value="{{.Name}}">{{.Name}}</option>{{end}}</select></label>{{end}}
+            {{if .Groups}}<label>Or search a document group<select name="group_id"><option value="0">No group filter</option>{{range .Groups}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select></label>{{end}}
+            {{if .Documents}}<details><summary>Choose specific files instead</summary><label>Filter files<input type="text" id="file-filter" placeholder="Type a filename or category" /></label><div class="choice-list">{{range .Documents}}<label class="inline-choice file-choice"><input type="checkbox" name="file_ids" value="{{.ID}}" /> {{.Filename}} {{if .Category}}<span class="muted">· {{.Category}}</span>{{end}}</label>{{end}}</div></details>{{else}}<p class="field-hint">No documents are in the library yet.</p>{{end}}
+          </fieldset>
+          <fieldset class="source-selection">
+            <legend>Webpages <span class="field-hint">(optional)</span></legend>
+            {{if .WebPages}}<div class="choice-list">{{range .WebPages}}<label class="inline-choice"><input type="checkbox" name="page_ids" value="{{.ID}}" /> {{.URL}}</label>{{end}}</div>{{else}}<p class="field-hint">No webpages selected. Add pages from the Library when useful.</p>{{end}}
+          </fieldset>
+          <div class="form-footer"><span class="field-hint">Conversation memory is saved in this app’s local database. No webpage is used unless selected.</span><button type="submit" class="button button-primary"><span>Find answer</span><span aria-hidden="true">→</span></button></div>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      {{if .Answer}}
+        <section class="answer-section" aria-live="polite">
+          <div class="answer-heading"><span class="answer-mark">✦</span><h2>Answer</h2></div>
+          <div class="card answer-card"><p class="answer-text">{{.Answer.Answer}}</p></div>
+          {{if .Answer.Sources}}
+            <div class="source-heading"><div><p class="eyebrow">CITED EVIDENCE</p><h2>Sources</h2></div><span class="count">{{len .Answer.Sources}}</span></div>
+            <div class="source-list">
+              {{range .Answer.Sources}}
+                <article class="source-card">
+                  <div class="source-file"><span class="file-icon small" aria-hidden="true">{{if eq .Kind "webpage"}}WEB{{else}}DOC{{end}}</span><strong>{{.Filename}}</strong></div>
+                  {{if .Dates}}<p class="source-metadata"><strong>Dates found:</strong> {{range $i, $value := .Dates}}{{if $i}}, {{end}}{{$value}}{{end}}</p>{{end}}
+                  {{if .People}}<p class="source-metadata"><strong>Names found:</strong> {{range $i, $value := .People}}{{if $i}}, {{end}}{{$value}}{{end}}</p>{{end}}
+                  <blockquote>{{.Text}}</blockquote>
+                </article>
+              {{end}}
+            </div>
+          {{else}}<div class="notice notice-neutral">No matching passages were found in the selected sources.</div>{{end}}
+        </section>
+      {{else}}
+        <section class="how-it-works"><span class="how-icon" aria-hidden="true">⌕</span><div><strong>Answers with evidence</strong><p>Answers cite retrieved files or webpages. Names and dates are extracted as clues for deeper analysis, not verified facts.</p></div></section>
+      {{end}}
+      <footer class="page-footer">The model can make mistakes. Use cited excerpts to verify important details.</footer>
+    </main>
+  </body>
+</html>
+{{end}}

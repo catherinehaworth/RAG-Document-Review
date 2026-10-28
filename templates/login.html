@@ -1,0 +1,36 @@
+{{define "login.html"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <title>{{.Title}} · Document Review</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-wrap">
+      <a class="brand auth-brand" href="/login"><span class="brand-mark">D</span><span>Document <span class="brand-light">Review</span></span></a>
+      <section class="card auth-card">
+        <p class="eyebrow">PRIVATE KNOWLEDGE BASE</p>
+        <h1>Welcome back</h1>
+        <p class="subheading">Sign in to manage your documents and get source-backed answers.</p>
+        {{if .Error}}<div class="notice notice-error" role="alert">{{.Error}}</div>{{end}}
+        <form method="post" action="/login">
+          <input type="hidden" name="next" value="{{.Next}}" />
+          <label>
+            Username
+            <input type="text" name="username" autocomplete="username" required autofocus />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit" class="button button-primary full-width">Sign in <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="auth-footnote">Authorized access only. Your session is protected with a secure, HTTP-only cookie.</p>
+      </section>
+    </main>
+  </body>
+</html>
+{{end}}
